@@ -3,8 +3,10 @@ package com.github.mikephil.charting.charts;
 
 import android.content.Context;
 import android.graphics.Color;
+import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PathDashPathEffect;
 import android.util.AttributeSet;
 
 import com.github.mikephil.charting.data.Entry;
@@ -29,6 +31,9 @@ public class LineChart extends BarLineChartBase<LineData> {
 
     /** paint for the inner circle of the value indicators */
     protected Paint mCirclePaintInner;
+
+    /** paint for the data point stems */
+    protected Paint mStemPaint;
 
     private FillFormatter mFillFormatter;
 
@@ -58,6 +63,12 @@ public class LineChart extends BarLineChartBase<LineData> {
         mCirclePaintInner = new Paint(Paint.ANTI_ALIAS_FLAG);
         mCirclePaintInner.setStyle(Paint.Style.FILL);
         mCirclePaintInner.setColor(Color.GRAY);
+
+        mStemPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mStemPaint.setStyle(Paint.Style.STROKE);
+        mStemPaint.setStrokeWidth(1f);
+        mStemPaint.setPathEffect(new DashPathEffect(new float[] { 3, 3 }, 0));
+        mStemPaint.setColor(0xAAFFFFFF);
 
         mHighlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mHighlightPaint.setStyle(Paint.Style.STROKE);
@@ -435,6 +446,9 @@ public class LineChart extends BarLineChartBase<LineData> {
                             isOffContentTop(positions[j + 1])
                             || isOffContentBottom(positions[j + 1]))
                         continue;
+
+                    mDrawCanvas.drawLine(positions[j], getHeight() - mOffsetBottom,
+                            positions[j], positions[j + 1], mStemPaint);
 
                     mDrawCanvas.drawCircle(positions[j], positions[j + 1],
                             dataSet.getCircleSize(), mCirclePaintInner);
