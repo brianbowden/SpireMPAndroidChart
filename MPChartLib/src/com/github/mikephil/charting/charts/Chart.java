@@ -1682,6 +1682,9 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     /** paint for the value text */
     public static final int PAINT_VALUES = 8;
 
+    /** paint for the outer circle (linechart) */
+    public static final int PAINT_CIRCLES_OUTER = 9;
+
     /** paint for the inner circle (linechart) */
     public static final int PAINT_CIRCLES_INNER = 10;
 

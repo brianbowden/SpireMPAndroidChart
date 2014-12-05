@@ -11,6 +11,7 @@ import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
 import android.graphics.PointF;
 import android.graphics.Rect;
+import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -120,6 +121,8 @@ public abstract class BarLineChartBase<T extends BarLineScatterCandleData<? exte
 
     /** the object representing the labels on the x-axis */
     protected XLabels mXLabels = new XLabels();
+
+    protected int mSelectedValueIndex = -1;
 
     // /** the approximator object used for data filtering */
     // private Approximator mApproximator;
@@ -662,9 +665,24 @@ public abstract class BarLineChartBase<T extends BarLineScatterCandleData<? exte
                     }
                 }
 
+                Typeface originalTypeface = null;
+                int originalColor = -1;
+
+                if (mSelectedValueIndex == i) {
+                    originalTypeface = mXLabelPaint.getTypeface();
+                    originalColor = mXLabelPaint.getColor();
+                    mXLabelPaint.setColor(Color.WHITE); // This is bad, but I'll deal with it if I need to.
+                    mXLabelPaint.setTypeface(Typeface.create(originalTypeface, Typeface.BOLD));
+                }
+
                 mDrawCanvas.drawText(label, position[0],
                         yPos,
                         mXLabelPaint);
+
+                if (mSelectedValueIndex == i) {
+                    mXLabelPaint.setTypeface(originalTypeface);
+                    mXLabelPaint.setColor(originalColor);
+                }
             }
         }
     }
@@ -1471,6 +1489,10 @@ public abstract class BarLineChartBase<T extends BarLineScatterCandleData<? exte
      */
     public void setBorderColor(int color) {
         mBorderPaint.setColor(color);
+    }
+
+    public void setSelectedValueIndex(int index) {
+        mSelectedValueIndex = index;
     }
 
     /**

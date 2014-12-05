@@ -24,6 +24,9 @@ public class LineChart extends BarLineChartBase<LineData> {
     /** the width of the highlighning line */
     protected float mHighlightWidth = 3f;
 
+    /** paint for the outer circle of the value indicators */
+    protected Paint mCirclePaintOuter;
+
     /** paint for the inner circle of the value indicators */
     protected Paint mCirclePaintInner;
 
@@ -47,9 +50,14 @@ public class LineChart extends BarLineChartBase<LineData> {
 
         mFillFormatter = new DefaultFillFormatter();
 
+        mCirclePaintOuter = new Paint(Paint.ANTI_ALIAS_FLAG);
+        mCirclePaintOuter.setStyle(Paint.Style.STROKE);
+        mCirclePaintOuter.setStrokeWidth(2f);
+        mCirclePaintOuter.setColor(Color.WHITE);
+
         mCirclePaintInner = new Paint(Paint.ANTI_ALIAS_FLAG);
         mCirclePaintInner.setStyle(Paint.Style.FILL);
-        mCirclePaintInner.setColor(Color.WHITE);
+        mCirclePaintInner.setColor(Color.GRAY);
 
         mHighlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mHighlightPaint.setStyle(Paint.Style.STROKE);
@@ -98,6 +106,7 @@ public class LineChart extends BarLineChartBase<LineData> {
             };
 
             mTrans.pointValuesToPixel(pts);
+
             // draw the highlight lines
             mDrawCanvas.drawLines(pts, mHighlightPaint);
         }
@@ -390,8 +399,6 @@ public class LineChart extends BarLineChartBase<LineData> {
     @Override
     protected void drawAdditional() {
 
-        mRenderPaint.setStyle(Paint.Style.FILL);
-
         ArrayList<LineDataSet> dataSets = mData.getDataSets();
 
         for (int i = 0; i < mData.getDataSetCount(); i++) {
@@ -410,7 +417,14 @@ public class LineChart extends BarLineChartBase<LineData> {
                     // Set the color for the currently drawn value. If the index
                     // is
                     // out of bounds, reuse colors.
-                    mRenderPaint.setColor(dataSet.getCircleColor(j / 2));
+                    mCirclePaintOuter.setColor(dataSet.getCircleColor(j / 2));
+
+                    int originalInnerColor = -1;
+
+                    if (mSelectedValueIndex == j / 2) {
+                        originalInnerColor = mCirclePaintInner.getColor();
+                        mCirclePaintInner.setColor(mCirclePaintOuter.getColor());
+                    }
 
                     if (isOffContentRight(positions[j]))
                         break;
@@ -422,11 +436,14 @@ public class LineChart extends BarLineChartBase<LineData> {
                             || isOffContentBottom(positions[j + 1]))
                         continue;
 
-                    mDrawCanvas.drawCircle(positions[j], positions[j + 1], dataSet.getCircleSize(),
-                            mRenderPaint);
                     mDrawCanvas.drawCircle(positions[j], positions[j + 1],
-                            dataSet.getCircleSize() / 2f,
-                            mCirclePaintInner);
+                            dataSet.getCircleSize(), mCirclePaintInner);
+                    mDrawCanvas.drawCircle(positions[j], positions[j + 1],
+                            dataSet.getCircleSize(), mCirclePaintOuter);
+
+                    if (originalInnerColor != -1) {
+                        mCirclePaintInner.setColor(originalInnerColor);
+                    }
                 }
             } // else do nothing
 
@@ -456,6 +473,9 @@ public class LineChart extends BarLineChartBase<LineData> {
         super.setPaint(p, which);
 
         switch (which) {
+            case PAINT_CIRCLES_OUTER:
+                mCirclePaintOuter = p;
+                break;
             case PAINT_CIRCLES_INNER:
                 mCirclePaintInner = p;
                 break;
@@ -469,6 +489,8 @@ public class LineChart extends BarLineChartBase<LineData> {
             return p;
 
         switch (which) {
+            case PAINT_CIRCLES_OUTER:
+                return mCirclePaintOuter;
             case PAINT_CIRCLES_INNER:
                 return mCirclePaintInner;
         }
