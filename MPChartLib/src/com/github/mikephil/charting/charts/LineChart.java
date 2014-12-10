@@ -68,7 +68,7 @@ public class LineChart extends BarLineChartBase<LineData> {
         mStemPaint.setStyle(Paint.Style.STROKE);
         mStemPaint.setStrokeWidth(1f);
         mStemPaint.setPathEffect(new DashPathEffect(new float[] { 3, 3 }, 0));
-        mStemPaint.setColor(0xAAFFFFFF);
+        mStemPaint.setColor(0xCCFFFFFF);
 
         mHighlightPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mHighlightPaint.setStyle(Paint.Style.STROKE);
