@@ -1715,6 +1715,9 @@ public abstract class Chart<T extends ChartData<? extends DataSet<? extends Entr
     /** paint object used for the limit lines */
     public static final int PAINT_LIMIT_LINE = 19;
 
+    /** paint object used for stems (vertical lines to circles) */
+    public static final int PAINT_STEM_LINE = 20;
+
     /**
      * set a new paint object for the specified parameter in the chart e.g.
      * Chart.PAINT_VALUES

@@ -35,6 +35,8 @@ public class LineChart extends BarLineChartBase<LineData> {
     /** paint for the data point stems */
     protected Paint mStemPaint;
 
+    private OnSelectedPointDrawnListener mSelectedPointDrawnListener;
+
     private FillFormatter mFillFormatter;
 
     public LineChart(Context context) {
@@ -431,10 +433,20 @@ public class LineChart extends BarLineChartBase<LineData> {
                     mCirclePaintOuter.setColor(dataSet.getCircleColor(j / 2));
 
                     int originalInnerColor = -1;
+                    int originalStemColor = -1;
+                    float originalStemWidth = -1;
 
                     if (mSelectedValueIndex == j / 2) {
                         originalInnerColor = mCirclePaintInner.getColor();
                         mCirclePaintInner.setColor(mCirclePaintOuter.getColor());
+                        originalStemColor = mStemPaint.getColor();
+                        mStemPaint.setColor(mCirclePaintOuter.getColor());
+                        originalStemWidth = mStemPaint.getStrokeWidth();
+                        mStemPaint.setStrokeWidth(originalStemWidth * 1.5f);
+
+                        if (mSelectedPointDrawnListener != null) {
+                            mSelectedPointDrawnListener.onPointDrawn(positions[j], positions[j + 1]);
+                        }
                     }
 
                     if (isOffContentRight(positions[j]))
@@ -457,6 +469,8 @@ public class LineChart extends BarLineChartBase<LineData> {
 
                     if (originalInnerColor != -1) {
                         mCirclePaintInner.setColor(originalInnerColor);
+                        mStemPaint.setColor(originalStemColor);
+                        mStemPaint.setStrokeWidth(originalStemWidth);
                     }
                 }
             } // else do nothing
@@ -493,6 +507,9 @@ public class LineChart extends BarLineChartBase<LineData> {
             case PAINT_CIRCLES_INNER:
                 mCirclePaintInner = p;
                 break;
+            case PAINT_STEM_LINE:
+                mStemPaint = p;
+                break;
         }
     }
 
@@ -507,6 +524,8 @@ public class LineChart extends BarLineChartBase<LineData> {
                 return mCirclePaintOuter;
             case PAINT_CIRCLES_INNER:
                 return mCirclePaintInner;
+            case PAINT_STEM_LINE:
+                return mStemPaint;
         }
 
         return null;
@@ -565,5 +584,13 @@ public class LineChart extends BarLineChartBase<LineData> {
 
             return fillMin;
         }
+    }
+
+    public void setOnSelectedPointDrawnListener(OnSelectedPointDrawnListener listener) {
+        mSelectedPointDrawnListener = listener;
+    }
+
+    public interface OnSelectedPointDrawnListener {
+        public void onPointDrawn(float x, float y);
     }
 }
