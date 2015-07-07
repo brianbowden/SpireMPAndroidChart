@@ -6,9 +6,10 @@ import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.PathDashPathEffect;
 import android.util.AttributeSet;
+import android.util.Log;
 
+import com.github.mikephil.charting.data.DataSet;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
@@ -39,6 +40,13 @@ public class LineChart extends BarLineChartBase<LineData> {
 
     private FillFormatter mFillFormatter;
 
+    private DataSet<Entry> mPreviousDataSet;
+    private DataSet<Entry> mCurrentDataSet;
+    private float[] mPreviousEntryCoords;
+    private float[] mPreviousEntryNewValues;
+    private boolean mPreviousEntryPositionsCreated;
+    private boolean mUseMorph;
+
     public LineChart(Context context) {
         super(context);
     }
@@ -54,6 +62,9 @@ public class LineChart extends BarLineChartBase<LineData> {
     @Override
     protected void init() {
         super.init();
+
+        mPreviousEntryCoords = new float[0];
+        mPreviousEntryNewValues = new float[0];
 
         mFillFormatter = new DefaultFillFormatter();
 
@@ -154,6 +165,13 @@ public class LineChart extends BarLineChartBase<LineData> {
     protected void drawData() {
 
         ArrayList<LineDataSet> dataSets = mData.getDataSets();
+        mCurrentDataSet = dataSets.get(0);
+
+        if (mPhaseY == 0.0f) {
+            mPreviousEntryNewValues = mPreviousEntryCoords;
+            mTrans.pixelsToValue(mPreviousEntryNewValues);
+            mPreviousEntryPositionsCreated = true;
+        }
 
         for (int i = 0; i < mData.getDataSetCount(); i++) {
 
@@ -297,6 +315,10 @@ public class LineChart extends BarLineChartBase<LineData> {
 
                     mTrans.pathValueToPixel(filled);
 
+                    if (mUseMorph) {
+
+                    }
+
                     mDrawCanvas.drawPath(filled, mRenderPaint);
 
                     // restore alpha
@@ -318,13 +340,33 @@ public class LineChart extends BarLineChartBase<LineData> {
     private Path generateFilledPath(ArrayList<Entry> entries, float fillMin) {
 
         Path filled = new Path();
-        filled.moveTo(entries.get(0).getXIndex(), entries.get(0).getVal() * mPhaseY);
+
+        float yMultiplier = mUseMorph ? 1 : mPhaseY;
+        float yStartValue = entries.get(0).getVal() * yMultiplier;
+        if (mUseMorph) {
+            if (mPreviousEntryNewValues.length > 0) {
+                yStartValue = mPreviousEntryNewValues[1] + (yStartValue - mPreviousEntryNewValues[1]) * mPhaseY;
+            } else {
+                yStartValue = yStartValue * mPhaseY;
+            }
+        }
+
+        filled.moveTo(entries.get(0).getXIndex(), yStartValue);
 
         // create a new path
         for (int x = 1; x < entries.size() * mPhaseX; x++) {
-
             Entry e = entries.get(x);
-            filled.lineTo(e.getXIndex(), e.getVal() * mPhaseY);
+            float yValue = e.getVal() * yMultiplier;
+
+            if (mUseMorph) {
+                if (mPreviousEntryNewValues.length > (x * 2 + 1)) {
+                    yValue = mPreviousEntryNewValues[x * 2 + 1] + (yValue - mPreviousEntryNewValues[x * 2 + 1]) * mPhaseY;
+                } else {
+                    yValue = yValue * mPhaseY;
+                }
+            }
+
+            filled.lineTo(e.getXIndex(), yValue);
         }
 
         // close up
@@ -344,13 +386,33 @@ public class LineChart extends BarLineChartBase<LineData> {
     private Path generateLinePath(ArrayList<Entry> entries) {
 
         Path line = new Path();
-        line.moveTo(entries.get(0).getXIndex(), entries.get(0).getVal() * mPhaseY);
+
+        float yMultiplier = mUseMorph ? 1 : mPhaseY;
+        float yStartValue = entries.get(0).getVal() * yMultiplier;
+        if (mUseMorph) {
+            if (mPreviousEntryNewValues.length > 0) {
+                yStartValue = mPreviousEntryNewValues[1] + (yStartValue - mPreviousEntryNewValues[1]) * mPhaseY;
+            } else {
+                yStartValue = yStartValue * mPhaseY;
+            }
+        }
+
+        line.moveTo(entries.get(0).getXIndex(), yStartValue);
 
         // create a new path
         for (int x = 1; x < entries.size() * mPhaseX; x++) {
-
             Entry e = entries.get(x);
-            line.lineTo(e.getXIndex(), e.getVal() * mPhaseY);
+            float yValue = e.getVal() * yMultiplier;
+
+            if (mUseMorph) {
+                if (mPreviousEntryNewValues.length > (x * 2 + 1)) {
+                    yValue = mPreviousEntryNewValues[x * 2 + 1] + (yValue - mPreviousEntryNewValues[x * 2 + 1]) * mPhaseY;
+                } else {
+                    yValue = yValue * mPhaseY;
+                }
+            }
+
+            line.lineTo(e.getXIndex(), yValue);
         }
 
         return line;
@@ -423,7 +485,13 @@ public class LineChart extends BarLineChartBase<LineData> {
 
                 ArrayList<Entry> entries = dataSet.getYVals();
 
-                float[] positions = mTrans.generateTransformedValuesLineScatter(entries, mPhaseY);
+                float[] positions = mTrans.generateTransformedValuesLineScatter(entries, mUseMorph ? 1.0f : mPhaseY);
+                float[] prevPositions = new float[0];
+
+                if (mUseMorph && mPreviousEntryNewValues.length > 0) {
+                    prevPositions = mPreviousEntryNewValues.clone();
+                    mTrans.pointValuesToPixel(prevPositions);
+                }
 
                 for (int j = 0; j < positions.length * mPhaseX; j += 2) {
 
@@ -436,6 +504,20 @@ public class LineChart extends BarLineChartBase<LineData> {
                     int originalStemColor = -1;
                     float originalStemWidth = -1;
 
+                    float yValue = positions[j + 1];
+                    if (mUseMorph && prevPositions.length > j + 1) {
+                        yValue = prevPositions[j + 1] - ((prevPositions[j + 1] - yValue) * mPhaseY);
+                        Log.d("TESTTESTETET", "Writing y-Value. Orig: " + positions[j + 1] + " New: " + yValue);
+
+                    } else {
+                        yValue = yValue + (getHeight() - mOffsetBottom - yValue) * (1.0f - mPhaseY);
+                    }
+
+                    if (j == 0) {
+                        Log.d("TESTTESTTEST", "Y Value: " + yValue);
+                    }
+
+
                     if (mSelectedValueIndex == j / 2) {
                         originalInnerColor = mCirclePaintInner.getColor();
                         mCirclePaintInner.setColor(mCirclePaintOuter.getColor());
@@ -445,7 +527,7 @@ public class LineChart extends BarLineChartBase<LineData> {
                         mStemPaint.setStrokeWidth(originalStemWidth * 1.5f);
 
                         if (mSelectedPointDrawnListener != null) {
-                            mSelectedPointDrawnListener.onPointDrawn(positions[j], positions[j + 1]);
+                            mSelectedPointDrawnListener.onPointDrawn(positions[j], yValue);
                         }
                     }
 
@@ -455,16 +537,16 @@ public class LineChart extends BarLineChartBase<LineData> {
                     // make sure the circles don't do shitty things outside
                     // bounds
                     if (isOffContentLeft(positions[j]) ||
-                            isOffContentTop(positions[j + 1])
-                            || isOffContentBottom(positions[j + 1]))
+                            isOffContentTop(yValue)
+                            || isOffContentBottom(yValue))
                         continue;
 
                     mDrawCanvas.drawLine(positions[j], getHeight() - mOffsetBottom,
-                            positions[j], positions[j + 1], mStemPaint);
+                            positions[j], yValue, mStemPaint);
 
-                    mDrawCanvas.drawCircle(positions[j], positions[j + 1],
+                    mDrawCanvas.drawCircle(positions[j], yValue,
                             dataSet.getCircleSize(), mCirclePaintInner);
-                    mDrawCanvas.drawCircle(positions[j], positions[j + 1],
+                    mDrawCanvas.drawCircle(positions[j], yValue,
                             dataSet.getCircleSize(), mCirclePaintOuter);
 
                     if (originalInnerColor != -1) {
@@ -476,6 +558,16 @@ public class LineChart extends BarLineChartBase<LineData> {
             } // else do nothing
 
         }
+
+        if (mPhaseY == 1.0f) {
+            mPreviousDataSet = mCurrentDataSet;
+            mPreviousEntryPositionsCreated = false;
+            mPreviousEntryCoords = mTrans.generateTransformedValuesLineScatter(mCurrentDataSet.getYVals(), 1.0f);
+        }
+    }
+
+    public void setUseMorph(boolean useMorph) {
+        mUseMorph = useMorph;
     }
 
     /**
