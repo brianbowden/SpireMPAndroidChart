@@ -507,14 +507,9 @@ public class LineChart extends BarLineChartBase<LineData> {
                     float yValue = positions[j + 1];
                     if (mUseMorph && prevPositions.length > j + 1) {
                         yValue = prevPositions[j + 1] - ((prevPositions[j + 1] - yValue) * mPhaseY);
-                        Log.d("TESTTESTETET", "Writing y-Value. Orig: " + positions[j + 1] + " New: " + yValue);
 
                     } else {
                         yValue = yValue + (getHeight() - mOffsetBottom - yValue) * (1.0f - mPhaseY);
-                    }
-
-                    if (j == 0) {
-                        Log.d("TESTTESTTEST", "Y Value: " + yValue);
                     }
 
 
